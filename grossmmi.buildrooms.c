@@ -1,5 +1,8 @@
 #include <unistd.h>
+#include <sys/stat.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <time.h>
 
 enum type = {start, mid, end};
 
@@ -66,12 +69,27 @@ int main()
       {
         write = fwrite(connect, sizeof(char), sizeof(connect));
         char num = itoa(count);
+        count++;
         write = fwrite(num, sizeof(char), sizeof(num));
         write = fwrite(colon, sizeof(char), sizeof(colon));
-        
+        write = fwrite(gameboard[j]->roomName, sizeof(char), sizeof(gameboard[j]->roomName), fp);)
+        write = fwrite(nline, sizeof(char), sizeof(nline));
       }
     }
+    int thisType;
+    if (gameboard[i]->myType == start)
+      thisType = 0;
+    else if (gameboard[i]->myType == mid)
+      thisType = 1;
+    else
+      thisType = 2;
 
+    //write final line of room type
+    write = fwrite(roomType, sizeof(char), sizeof(roomType));
+    write = fwrite(typeString[thisType], sizeof(char), sizeof(typeString[thisType]));
+    write = fwrite(nline, sizeof(char), sizeof(nline));
+
+    //close the file
     fclose(fp);
   }
 
