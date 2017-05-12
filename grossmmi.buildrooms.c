@@ -36,6 +36,9 @@ int main()
   directory = "grossmmi.rooms.";
   strcat(directory, itoa(pid));
   mkdir(directory, 0777);
+
+
+
   //create 7 room files
   int i, j, k;
   int write;
@@ -57,6 +60,7 @@ int main()
     strcat(fileName, itoa(i));
     strcat(fileName, ".txt");
     FILE *fp = fopen(fileName, "w+");
+
     write = fwrite(name, sizeof(char), sizeof(name), fp);
     write = fwrite(gameboard[i]->roomName, sizeof(char), sizeof(gameboard[i]->roomName), fp);
     write = fwrite(nline, sizeof(char), sizeof(nline));
