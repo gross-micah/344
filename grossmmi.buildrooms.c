@@ -14,10 +14,10 @@ struct Room {
   enum type myType;
 };
 
-
-
 int main()
 {
+  //seed random
+  srand(time(NULL));
   //setup room structures
   char *rooms[10] = {"bathroom", "kitchen", "Chipotle", "bedroom", "office",
   "solarium", "garage", "library", "moat", "basement"};
@@ -25,9 +25,83 @@ int main()
   const char *typeString[3] = {"START_ROOM", "MID_ROOM", "END_ROOM"}
 
   struct Room gameboard[10];
+  int i, j, k;
+  int staken = 0;
+  int etaken = 0;
+  int taken[10];
+  //initialize array to ensure no repeated names
+  for (i = 0; i < 7; i++)
+  {
+    taken[i] = 0;
+  }
+  //populate each room
+  for (i = 0;, i < 7; i++)
+  {
+    memset(gameboard[i]->roomName, '\0', 100);
+    int done = 0;
+    int temp;
+    do {
+      temp = rand() % 10;
+      //take name from rooms array if available
+      if (taken[temp] == 0)
+      {
+        gameboard[i]->roomName = rooms[temp];
+        taken[temp] = 1;
+        done = 1;
+      }
+    } while(done != 1);
+    done = 0;
+    //set room type
+    do {
+      temp = rand() % 3;
+      if (temp == 0)
+      {
+        if (staken == 0)
+        {
+          gameboard[i]->myType = start;
+          staken = 1;
+          done = 1;
 
-  //seed random
-  srand(time(NULL));
+        }
+        else if (etaken == 0) // if still missing end, apply here
+        {
+          gameboard[i]->myType = end;
+          etaken = 1;
+          done = 1;
+        }
+      }
+      else if (temp == 2)
+      {
+        if (etaken == 0)
+        {
+          gameboard[i]->myType = end;
+          etaken = 1;
+          done = 1;
+        }
+        //take another opportunity to try to fill in start and end types
+        else if (staken == 0)
+        {
+          gameboard[i]->myType = start;
+          staken = 1;
+          done = 1;
+        }
+      }
+      //prevent fail scenario of missing start and end rooms
+      else if (i == 5 && staken == 0 && etaken == 0)
+      {
+        gameboard[i]->myType = start;
+        staken = 1;
+        done = 1;
+      }
+      else if (i == 6 && etaken == 0)
+      {
+        gameboard[i]->myType = end;
+        etaken = 1;
+        done = 1;
+      }
+    } while(done != 1);
+  }
+
   //grab processor ID for folder
   int pid = getpid();
   //initialize folder name and append pid
@@ -40,7 +114,6 @@ int main()
 
 
   //create 7 room files
-  int i, j, k;
   int write;
   char fileName[100];
   //string for proper formatting into file
