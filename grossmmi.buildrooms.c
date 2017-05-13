@@ -34,10 +34,18 @@ int main()
   {
     taken[i] = 0;
   }
+  //initialize the position value for each room
+  for (i = 0; i < 7; i++)
+  {
+    gameboard[i]->position = i;
+  }
+
   //populate each room
   for (i = 0;, i < 7; i++)
   {
+    //ensure no garbage in the arrays for values and names
     memset(gameboard[i]->roomName, '\0', 100);
+    memset(gameboard[i]->connections, 0, 7);
     int done = 0;
     int temp;
     do {
@@ -51,6 +59,7 @@ int main()
       }
     } while(done != 1);
     done = 0;
+
     //set room type
     do {
       temp = rand() % 3;
@@ -99,8 +108,33 @@ int main()
         etaken = 1;
         done = 1;
       }
+      else
+      {
+        gameboard[i]->myType = mid;
+        done = 1;
+      }
     } while(done != 1);
+
+    done = 0;
+    //create connections between 3 and 6
+    int rdm1 = rand() % 3 + 4;
+    do {
+      int rdm2 = rand() % 7;
+      if (gameboard[i]->connections[rdm2] == 0)
+      {
+        //every connection needs it reflected in the room being connected
+        gameboard[i]->connections[rdm2] = 1;
+        gameboard[i]->connectionsCount += 1;
+        gameboard[rdm2]->connections[i] = 1;
+        gameboard[rdm2]->connectionsCount += 1;
+      }
+      if (gameboard[i]->connectionsCount >= rdm1)
+        done = 1;
+
+    } while(done != 1);
+
   }
+  //all rooms have now been completely initialized and connected
 
   //grab processor ID for folder
   int pid = getpid();
