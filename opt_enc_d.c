@@ -20,18 +20,18 @@ int main(int argc, char** argv)
   int portNumber = atoi(argv[1]);
   if (portNumber > 65535 || portNumber < 0)
   {
-    printf("Error: invalid port number\n");
+    perror("Error: invalid port number\n");
     exit(1);
   }
 
   //define variables
   int charsWritten;
   int charsRead;
+  int pid;
   int listenSocketFD, establishedConnectionFD;
   struct sockaddr_in serverAddress, clientAddress;
   socklen_t sizeOfClientInfo;
   memset((char*)&serverAddress, '\0', sizeof(serverAddress));
-  //struct hostent* serverHostInfo;
   char buffer[256];
   serverAddress.sin_family = AF_UNIX;
   serverAddress.sin_port = htons(portNumber);
@@ -40,32 +40,61 @@ int main(int argc, char** argv)
   listenSocketFD = socket(AF_UNIX, SOCK_STREAM, 0);
   if (listenSocketFD < 0)
   {
-    printf("Error: failed to create socket\n");
+    perror("Error: failed to create socket\n");
     exit(1);
   }
   //setup listening on socket
   if (bind(listenSocketFD, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0)
   {
-    printf("Error: binding failed\n");
+    perror("Error: binding failed\n");
   }
   //begin listening
   if(listen(listenSocketFD, 5) < 0)
   {
-    printf("Error: listening failed\n");
+    perror("Error: listening failed\n");
   }
-  printf("now listening\n");
   sizeOfClientInfo = sizeof(clientAddress);
+  //infinite loop to listen for signals.
   while (1)
   {
-    //infinite loop to listen for signals. manage forking for concurrent signals
+
     establishedConnectionFD = accept(listenSocketFD, (struct sockaddr *)&clientAddress, &sizeOfClientInfo);
     //check if connection accepted
     if (establishedConnectionFD < 0)
     {
-      printf("Error: failed to accept\n");
+      perror("Error: failed to accept\n");
     }
-    //do encryption here
+    //manage forking and activity for child signal before terminating process
+    pid = fork();
 
+    if (pid < 0)
+    {
+      perror("Error: failure at fork\n");
+    }
+
+    //do encryption here for child process
+    else if (pid == 0)
+    {
+      memset(buffer, '\0', 256);
+      charsRead = recv(establishedConnectionFD, buffer, 255, 0);
+      if (charsRead < 0)
+      {
+        perror("Error: reading from socket\n");
+      }
+      //check 1st 3 digits in buffer to verify signal from enc not dec
+      int confirmed = 0;
+      if(buffer[0] != 'E') confirmed = -1;
+      if(buffer[1] != 'N') confirmed = -1;
+      if(buffer[2] != 'C') confirmed = -1;
+      if (confirmed == -1)
+      {
+        perror("Error: incorrect program identifier\n");
+      }
+
+      
+
+
+    }
 
     //send it back here
 
