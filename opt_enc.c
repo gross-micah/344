@@ -18,7 +18,7 @@ int main(int argc, char** argv)
   }
 
   int portNumber = atoi(argv[1]);
-  if (portNumber > 65535 || portNumber < 0)
+  if (portNumber > 65535 || portNumber <= 0)
   {
     perror("Error: invalid port number\n");
     exit(1);
@@ -28,6 +28,7 @@ int main(int argc, char** argv)
   int charsWritten;
   int charsRead;
   int pid;
+  int i;
   int listenSocketFD, establishedConnectionFD;
   struct hostent* serverHostInfo;
   struct sockaddr_in serverAddress;
@@ -51,20 +52,24 @@ int main(int argc, char** argv)
   if (charsRead < 0)
   {
     perror("Error: reading from socket\n");
-  }
-  //check 1st 3 digits in buffer to verify signal from enc not dec
-  int confirmed = 0;
-  if(buffer[0] != 'E') confirmed = -1;
-  if(buffer[1] != 'N') confirmed = -1;
-  if(buffer[2] != 'C') confirmed = -1;
-  if (confirmed == -1)
-  {
-    perror("Error: incorrect program identifier\n");
+    exit(1);
   }
 
-  "Error: could not contact otp_enc_d on port"
-  "Error: key ‘" myshortkey "’ is too short"
-  "otp_enc error: input contains bad characters"
+  //verify only capital letters or [space]
+  for (i = 0; i < charsRead - 1; i++)
+  {
+    if (buffer[i] < 'A' && buffer[i] != ' ')
+    {
+      perror("otp_enc error: input contains bad characters\n");
+      exit(1);
+    }
+    else if (buffer[i] > 'Z')
+    {
+      perror("otp_enc error: input contains bad characters\n");
+      exit(1);
+    }
+  }
+
 
 
 

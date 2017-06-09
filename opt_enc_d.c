@@ -18,7 +18,7 @@ int main(int argc, char** argv)
   }
 
   int portNumber = atoi(argv[1]);
-  if (portNumber > 65535 || portNumber < 0)
+  if (portNumber > 65535 || portNumber <= 0)
   {
     perror("Error: invalid port number\n");
     exit(1);
@@ -91,7 +91,7 @@ int main(int argc, char** argv)
         perror("Error: incorrect program identifier\n");
       }
 
-      
+
 
 
     }
