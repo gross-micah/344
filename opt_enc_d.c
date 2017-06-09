@@ -83,12 +83,13 @@ int main(int argc, char** argv)
       }
       //check 1st 3 digits in buffer to verify signal from enc not dec
       int confirmed = 0;
-      if(buffer[0] != 'E') confirmed = -1;
-      if(buffer[1] != 'N') confirmed = -1;
-      if(buffer[2] != 'C') confirmed = -1;
+      if(buffer[charsRead - 1] != 'C') confirmed = -1;
+      if(buffer[charsRead - 2] != 'N') confirmed = -1;
+      if(buffer[charsRead - 3] != 'E') confirmed = -1;
       if (confirmed == -1)
       {
         perror("Error: incorrect program identifier\n");
+        exit(1);
       }
 
 
