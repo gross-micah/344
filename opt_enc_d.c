@@ -35,14 +35,6 @@ int main(int argc, char** argv)
   char buffer[256];
   serverAddress.sin_family = AF_UNIX;
   serverAddress.sin_port = htons(portNumber);
-  /* serverHostInfo = gethostbyname(localhost);
-  if (serverHostInfo == NULL)
-  {
-    fprintf(stderr, "Error (client): No such host\n");
-    exit(0)
-  }
-  */
-  //memcpy((char*)&serverAddress.sin_addr.s_addr, (char*)serverHostInfo->h_addr, serverHostInfo->h_length);
 
   //establish socket
   listenSocketFD = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -54,23 +46,31 @@ int main(int argc, char** argv)
   //setup listening on socket
   if (bind(listenSocketFD, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0)
   {
-    error("Error: binding failed\n");
+    printf("Error: binding failed\n");
   }
-  listen(listenSocketFD, 5);
-
-  sizeOfClientInfo = sizeof(clientAddress);
-  establishedConnectionFD = accept(listenSocketFD, (struct sockaddr *)&clientAddress, &sizeOfClientInfo);
-  //check if connection accepted
-  if (establishedConnectionFD < 0)
+  //begin listening
+  if(listen(listenSocketFD, 5) < 0)
   {
-    error("Error: failed to acept\n");
+    printf("Error: listening failed\n");
   }
-  //do encryption here
+  printf("now listening\n");
+  sizeOfClientInfo = sizeof(clientAddress);
+  while (1)
+  {
+    //infinite loop to listen for signals. manage forking for concurrent signals
+    establishedConnectionFD = accept(listenSocketFD, (struct sockaddr *)&clientAddress, &sizeOfClientInfo);
+    //check if connection accepted
+    if (establishedConnectionFD < 0)
+    {
+      printf("Error: failed to accept\n");
+    }
+    //do encryption here
 
 
-  //send it back here
+    //send it back here
 
-  close(establishedConnectionFD);
+    close(establishedConnectionFD);
+  }
   close(listenSocketFD);
 
   return 0;
