@@ -27,7 +27,7 @@ int main(int argc, char** argv)
   int random;
   char key[256];
   char letter;
-  memset(buffer, '\0', 256);
+  memset(key, '\0', 256);
   //write random valid characters to key
   //rand number between 65 and 91. 91 == [space]
   for (i = 0; i < keyLength; i++)
@@ -41,7 +41,7 @@ int main(int argc, char** argv)
   key[keyLength] = '\n';
 
   //print to standard out
-  printf("%s", keygen);
+  printf("%s", key);
 
   return 0;
 }
