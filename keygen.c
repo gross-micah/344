@@ -32,7 +32,7 @@ int main(int argc, char** argv)
   //rand number between 65 and 91. 91 == [space]
   for (i = 0; i < keyLength; i++)
   {
-    random = rand() % (28) + 65;
+    random = rand() % (27) + 65;
     if (random == 91) random = 32;
     letter = (char) random;
     key[i] = letter;

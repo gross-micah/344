@@ -1,3 +1,4 @@
+#include <fcntl.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <stdio.h>
@@ -79,11 +80,11 @@ int main(int argc, char** argv)
     exit(1);
   }
 
-  serverHostInfo = gethostbyname(localhost);
+  serverHostInfo = gethostbyname("localhost");
   if (serverHostInfo == NULL)
   {
     fprintf(stderr, "Error (client): No such host\n");
-    exit(0)
+    exit(0);
   }
 
   memcpy((char*)&serverAddress.sin_addr.s_addr, (char*)serverHostInfo->h_addr, serverHostInfo->h_length);
