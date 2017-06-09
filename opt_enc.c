@@ -8,7 +8,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#define BUFFERSIZE = 100000
 
 int main(int argc, char** argv)
 {
@@ -32,6 +31,7 @@ int main(int argc, char** argv)
   int i;
   int confirmation;
   int socketFD;
+  int BUFFERSIZE = 100000;
   struct hostent* serverHostInfo;
   struct sockaddr_in serverAddress;
   int fileDescriptor;
@@ -56,16 +56,7 @@ int main(int argc, char** argv)
     perror("Error: reading from socket\n");
     exit(1);
   }
-  //enter into loop until all bytes are captured.
-  /* note: increased buffer size to avoid running through loop issues
-  while (charsRead > 0)
-  {
-
-    memset(bufferPlain, '\0', 256);
-    charsRead = recv(fileDescriptor, bufferPlain, 255, 0);
-  }
-  */
-  close(fileDescriptor)
+  close(fileDescriptor);
 
   //now open and process the key file
   fileDescriptor = open(argv[2], O_RDONLY);
@@ -87,7 +78,7 @@ int main(int argc, char** argv)
   //exit if key is too small
   if (charsRead < comparePlain)
   {
-    perror("Error: key must be as large as message")
+    perror("Error: key must be as large as message");
     exit(1);
   }
 
@@ -155,7 +146,7 @@ int main(int argc, char** argv)
   confirmation = recv(socketFD, confirm, 255, 0);
   if (confirmation < 0)
   {
-    perror("Error: no confirmation after plaintext transmission\n")
+    perror("Error: no confirmation after plaintext transmission\n");
     exit(2);
   }
 
@@ -175,7 +166,7 @@ int main(int argc, char** argv)
   confirmation = recv(socketFD, confirm, 255, 0);
   if (confirmation < 0)
   {
-    perror("Error: no confirmation after plaintext transmission\n")
+    perror("Error: no confirmation after plaintext transmission\n");
     exit(2);
   }
 
