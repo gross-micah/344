@@ -43,6 +43,7 @@ int main(int argc, char** argv)
   char bufferPlain[BUFFERSIZE];
   char bufferKey[BUFFERSIZE];
   char confirm[256];
+  char buffer[256];
 
   fileDescriptor = open(argv[1], O_RDONLY);
   if (fileDescriptor < 0)
@@ -51,14 +52,53 @@ int main(int argc, char** argv)
     exit(1);
   }
 
-  memset(bufferPlain, '\0', 256);
-  charsRead = recv(fileDescriptor, bufferPlain, BUFFERSIZE, 0);
+  memset(bufferPlain, '\0', BUFFERSIZE);
+  memset(buffer, '\0', 256);
+
+  //establish signal to confirm proper program access
+  bufferPlain[0] = 'E';
+  bufferPlain[1] = 'N';
+  bufferPlain[2] = 'C';
+
+
+  //add remaing text after identifier
+  int index = 3;
+  do
+    charsRead = recv(fileDescriptor, buffer, 255, 0);
+    endChunk = index + charsRead;
+    for (i = index; i < endChunk; i++)
+    {
+      bufferPlain[i] = buffer[i];
+      index++
+    }
+  while (charsRead > 0);
+
+  //save charsRead value for plaintext for comparison
+  int comparePlain = index;
+
   if (charsRead < 0)
   {
     perror("Error: reading from socket\n");
     exit(1);
   }
   close(fileDescriptor);
+
+  bufferPlain[index - 1] = '\0';
+  //check for errors
+  //check for incoming bad characters
+  for (i = 0; i < (index - 1); i++)
+  {
+    if (buffer[i] < 'A' && buffer[i] != ' ')
+    {
+      perror("otp_enc_d error: input contains bad characters\n");
+      exit(1);
+    }
+    else if (bufferKey[i] > 'Z')
+    {
+      perror("otp_enc_d error: input contains bad characters\n");
+      exit(1);
+    }
+  }
 
   //now open and process the key file
   fileDescriptor = open(argv[2], O_RDONLY);
@@ -68,8 +108,6 @@ int main(int argc, char** argv)
     exit(1);
   }
   memset(bufferKey, '\0', BUFFERSIZE);
-  //save charsRead value for plaintext for comparison
-  int comparePlain = charsRead;
 
   charsRead = recv(fileDescriptor, bufferKey, BUFFERSIZE, 0);
   if (charsRead < 0)
@@ -97,15 +135,6 @@ int main(int argc, char** argv)
       perror("otp_enc error: input contains bad characters\n");
       exit(1);
     }
-  }
-
-  //attach signal that opt_enc is sending the message, not opt_dec
-  if (bufferKey[charsRead - 1] == '\n')
-  {
-    bufferKey[charsRead - 1] = 'E';
-    bufferKey[charsRead] = 'N';
-    bufferKey[charsRead + 1] = 'C';
-    bufferKey[charsRead + 2] = '\n';
   }
 
   serverAddress.sin_family = AF_UNIX;
@@ -164,8 +193,16 @@ int main(int argc, char** argv)
     printf("Error: not all data written to socket\n");
     exit(2);
   }
-  //confirm receipt from server / opt_enc_d
-  confirmation = recv(socketFD, confirm, 255, 0);
+  //confirm receipt from server / opt_enc_d of cypher
+  int index = 0
+  memset(buffer, '\0', 256);
+  do
+    confirmation = recv(socketFD, buffer, 255, 0);
+    //print to stdout as the values are coming in
+    printf("%s", buffer);
+    //reset for next batch of characters
+    memset(buffer, '\0', 256);
+  while (confirmation > 0);
   if (confirmation < 0)
   {
     perror("Error: no confirmation after plaintext transmission\n");

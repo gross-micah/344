@@ -33,6 +33,7 @@ int main(int argc, char** argv)
   socklen_t sizeOfClientInfo;
   memset((char*)&serverAddress, '\0', sizeof(serverAddress));
   char buffer[256];
+  char cypher[100000];
   serverAddress.sin_family = AF_UNIX;
   serverAddress.sin_port = htons(portNumber);
 
@@ -75,31 +76,68 @@ int main(int argc, char** argv)
     //do encryption here for child process
     else if (pid == 0)
     {
+      int index = 0;
+      int endChunk;
       memset(buffer, '\0', 256);
-      charsRead = recv(establishedConnectionFD, buffer, 255, 0);
+      do
+        charsRead = recv(establishedConnectionFD, buffer, 255, 0);
+        endChunk = index + charsRead;
+        for (i = index; i < endChunk; i++)
+        {
+          //check for incoming bad characters
+          if (buffer[i] < 'A' && buffer[i] != ' ')
+          {
+            perror("otp_enc_d error: input contains bad characters\n");
+            exit(1);
+          }
+          else if (bufferKey[i] > 'Z')
+          {
+            perror("otp_enc_d error: input contains bad characters\n");
+            exit(1);
+          }
+          else if (buffer[i] == ' ')
+            cypher[i] = '[';
+          else
+            cypher[i] = buffer[i];
+          index++;
+        }
+        memset(buffer, '\0', 256);
+      while (charsRead > 0);
+
       if (charsRead < 0)
       {
         perror("Error: reading from socket\n");
       }
       //check 1st 3 digits in buffer to verify signal from enc not dec
       int confirmed = 0;
-      if(buffer[charsRead - 1] != 'C') confirmed = -1;
-      if(buffer[charsRead - 2] != 'N') confirmed = -1;
-      if(buffer[charsRead - 3] != 'E') confirmed = -1;
+      if(cypher[0] != 'E') confirmed = -1;
+      if(cypher[1] != 'N') confirmed = -1;
+      if(cypher[2] != 'C') confirmed = -1;
       if (confirmed == -1)
       {
         perror("Error: incorrect program identifier\n");
         exit(1);
       }
 
+      //convert values
 
 
+          //send it back here
 
+      //cleanup and exit
+      close(establishedConnectionFD)
+      exit(0);
+    }
+    //parent process
+    else
+    {
+
+      close(establishedConnectionFD);
     }
 
-    //send it back here
 
-    close(establishedConnectionFD);
+
+
   }
   close(listenSocketFD);
 
