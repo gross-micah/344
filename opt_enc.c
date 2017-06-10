@@ -66,7 +66,7 @@ int main(int argc, char** argv)
   int endChunk;
   do
   {
-    charsRead = recv(fileDescriptor, buffer, 255, 0);
+    charsRead = read(fileDescriptor, buffer, 255);
     endChunk = index + charsRead;
     for (i = index; i < endChunk; i++)
     {
@@ -80,7 +80,7 @@ int main(int argc, char** argv)
 
   if (charsRead < 0)
   {
-    perror("Error: reading from socket\n");
+    perror("Error: reading from socket for plain text\n");
     exit(1);
   }
   close(fileDescriptor);
@@ -111,12 +111,13 @@ int main(int argc, char** argv)
   }
   memset(bufferKey, '\0', BUFFERSIZE);
 
-  charsRead = recv(fileDescriptor, bufferKey, BUFFERSIZE, 0);
+  charsRead = read(fileDescriptor, bufferKey, BUFFERSIZE);
   if (charsRead < 0)
   {
-    perror("Error: reading from socket\n");
+    perror("Error: reading from socket for key\n");
     exit(1);
   }
+  close(fileDescriptor);
   //exit if key is too small
   if (charsRead < comparePlain)
   {

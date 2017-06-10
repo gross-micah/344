@@ -40,7 +40,7 @@ int main(int argc, char** argv)
   char key[BUFFERSIZE];
   serverAddress.sin_family = AF_UNIX;
   serverAddress.sin_port = htons(portNumber);
-
+  serverAddress.sin_addr.s_addr = INADDR_ANY;
   //establish socket
   listenSocketFD = socket(AF_UNIX, SOCK_STREAM, 0);
   if (listenSocketFD < 0)
