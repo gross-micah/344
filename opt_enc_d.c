@@ -28,12 +28,16 @@ int main(int argc, char** argv)
   int charsWritten;
   int charsRead;
   int pid;
+  int i;
+  int BUFFERSIZE = 100000;
   int listenSocketFD, establishedConnectionFD;
   struct sockaddr_in serverAddress, clientAddress;
   socklen_t sizeOfClientInfo;
   memset((char*)&serverAddress, '\0', sizeof(serverAddress));
   char buffer[256];
-  char cypher[100000];
+  int cypherLength;
+  char cypher[BUFFERSIZE];
+  char key[BUFFERSIZE];
   serverAddress.sin_family = AF_UNIX;
   serverAddress.sin_port = htons(portNumber);
 
@@ -80,6 +84,7 @@ int main(int argc, char** argv)
       int endChunk;
       memset(buffer, '\0', 256);
       do
+      {
         charsRead = recv(establishedConnectionFD, buffer, 255, 0);
         endChunk = index + charsRead;
         for (i = index; i < endChunk; i++)
@@ -90,7 +95,7 @@ int main(int argc, char** argv)
             perror("otp_enc_d error: input contains bad characters\n");
             exit(1);
           }
-          else if (bufferKey[i] > 'Z')
+          else if (key[i] > 'Z')
           {
             perror("otp_enc_d error: input contains bad characters\n");
             exit(1);
@@ -102,7 +107,9 @@ int main(int argc, char** argv)
           index++;
         }
         memset(buffer, '\0', 256);
-      while (charsRead > 0);
+      }while (charsRead > 0);
+
+      cypherLength = index;
 
       if (charsRead < 0)
       {
@@ -119,13 +126,58 @@ int main(int argc, char** argv)
         exit(1);
       }
 
+      buffer[0] = 'O';
+      buffer[1] = 'K';
+      //send an 'ok' to continue the process
+      charsWritten = send(establishedConnectionFD, buffer, 2, 0);
+      if (charsWritten < 2)
+      {
+        perror("opt_enc_d error: confirmation signal after message receipt failed\n");
+      }
+      //capture the key value
+      memset(buffer, '\0', 256);
+      memset(key, '\0', BUFFERSIZE);
+      index = 0;
+      do
+      {
+        charsRead = recv(establishedConnectionFD, buffer, 255, 0);
+        endChunk = index + charsRead;
+        for (i = index; i < endChunk; i++)
+        {
+          if (buffer[i] == ' ')
+            key[i] = '[';
+          else
+            key[i] = buffer[i];
+          index++;
+        }
+        memset(buffer, '\0', 256);
+      } while (charsRead > 0);
+      if (charsRead < 0)
+      {
+        perror("Error: reading from socket for key\n");
+      }
       //convert values
+      int temp;
+      int keyInt;
+      char value;
+      for (i = 0; i < cypherLength; i++)
+      {
+        temp = (int) cypher[i] - 64;
+        keyInt = key[i] - 64;
+        value = (char) ((temp + keyInt) % 27 + 64);
+        cypher[i] = value;
+        if (cypher[i] == '@')
+          cypher[i] = ' ';
+      }
 
-
-          //send it back here
-
+      //send it back here
+      charsWritten = send(establishedConnectionFD, cypher, cypherLength, 0);
+      if (charsWritten < 2)
+      {
+        perror("opt_enc_d error: confirmation signal after message receipt failed\n");
+      }
       //cleanup and exit
-      close(establishedConnectionFD)
+      close(establishedConnectionFD);
       exit(0);
     }
     //parent process
@@ -134,9 +186,6 @@ int main(int argc, char** argv)
 
       close(establishedConnectionFD);
     }
-
-
-
 
   }
   close(listenSocketFD);

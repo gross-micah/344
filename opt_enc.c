@@ -63,15 +63,17 @@ int main(int argc, char** argv)
 
   //add remaing text after identifier
   int index = 3;
+  int endChunk;
   do
+  {
     charsRead = recv(fileDescriptor, buffer, 255, 0);
     endChunk = index + charsRead;
     for (i = index; i < endChunk; i++)
     {
       bufferPlain[i] = buffer[i];
-      index++
+      index++;
     }
-  while (charsRead > 0);
+  }while (charsRead > 0);
 
   //save charsRead value for plaintext for comparison
   int comparePlain = index;
@@ -194,15 +196,16 @@ int main(int argc, char** argv)
     exit(2);
   }
   //confirm receipt from server / opt_enc_d of cypher
-  int index = 0
+  index = 0;
   memset(buffer, '\0', 256);
   do
+  {
     confirmation = recv(socketFD, buffer, 255, 0);
     //print to stdout as the values are coming in
     printf("%s", buffer);
     //reset for next batch of characters
     memset(buffer, '\0', 256);
-  while (confirmation > 0);
+  } while (confirmation > 0);
   if (confirmation < 0)
   {
     perror("Error: no confirmation after plaintext transmission\n");
