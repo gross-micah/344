@@ -19,8 +19,8 @@ int main(int argc, char** argv)
   }
 
   int portNumber;
-  portNumber = atoi(argv[1]);
-  printf("port number is %d\n", portnumber);
+  portNumber = atoi(argv[3]);
+  printf("port number is %d\n", portNumber);
   if (portNumber > 65535 || portNumber <= 0)
   {
     perror("Error: invalid port number\n");
