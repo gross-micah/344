@@ -1,3 +1,5 @@
+#include <assert.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -10,7 +12,6 @@ enum type {start, mid, end};
 struct Room {
   char *roomName;
   int connections[7];
-  int position;
   int connectionsCount;
   enum type myType;
 };
@@ -22,79 +23,140 @@ int main()
   //setup room structures
   char *rooms[10] = {"bathroom", "kitchen", "Chipotle", "bedroom", "office",
   "solarium", "garage", "library", "moat", "basement"};
-  const char *typeString[3] = {"START_ROOM", "MID_ROOM", "END_ROOM"};
+  char *s = "START_ROOM";
+  char *m = "MID_ROOM";
+  char *e = "END_ROOM";
 
   struct Room gameboard[7];
-  int i, j, k;
+  int i, j, k, random;
   int taken[10];
   //initialize array to ensure no repeated names
   for (i = 0; i < 10; i++)
   {
     taken[i] = 0;
   }
-  //initialize the position value for each room
+  //initialize connectionsboard since I was getting garbage values on flip. fine locally
   for (i = 0; i < 7; i++)
   {
-    gameboard[i].position = i;
+    for (j = 0; j < 7; j++)
+    {
+      gameboard[i].connections[j] = 0;
+    }
   }
 
-  //populate each room
+
+
+  //populate each room name and set count to 0
   for (i = 0; i < 7; i++)
   {
     //ensure no garbage in the arrays for values and names
     //memset(gameboard[i].roomName, '\0', 100);
-    memset(gameboard[i].connections, 0, 7);
-    int done = 0;
-    int temp;
-    do {
-      temp = rand() % 10;
-      //take name from rooms array if available
 
-      if (taken[temp] == 0)
-      {
-        gameboard[i].roomName = rooms[temp];
-        taken[temp] = 1;
-        done = 1;
-      }
-    } while(done != 1);
-
-    if (i == 0)
+    gameboard[i].connectionsCount = 0;
+    random = rand() % 10;
+    if (taken[random] == 0)
     {
-      gameboard[i].myType = start;
-    }
-    else if (i == 1)
-    {
-      gameboard[i].myType = end;
+      gameboard[i].roomName = rooms[random];
+      taken[random] = 1;
     }
     else
     {
-      gameboard[i].myType = mid;
+      i--;
     }
-
-    done = 0;
-    //create connections between 3 and 6
-    int rdm1 = rand() % 3 + 4;
-    do {
-      int rdm2 = rand() % 7;
-      if (gameboard[i].connections[rdm2] == 0)
-      {
-        //every connection needs it reflected in the room being connected
-        gameboard[i].connections[rdm2] = 1;
-        gameboard[i].connectionsCount += 1;
-        gameboard[rdm2].connections[i] = 1;
-        gameboard[rdm2].connectionsCount += 1;
-      }
-      if (gameboard[i].connectionsCount >= rdm1)
-        done = 1;
-
-    } while(done != 1);
-
   }
+  //set first room as start
+  gameboard[0].myType = start;
+  //set 2nd room as end
+  gameboard[1].myType = end;
+  for (i = 2; i < 7; i++)
+  {
+    gameboard[i].myType = mid;
+  }
+
+
+  printf("Game board starting\n");
+  for (i = 0; i < 7; i++)
+  {
+    for (j = 0; j < 7; j++)
+    {
+      printf("%d ", gameboard[i].connections[j]);
+    }
+    printf("\n");
+  }
+
+
+  //create connections between 3 and 6
+  for (i = 0; i <= 6; i++)
+  {
+    printf("Starting with connection %d\n", i);
+    for (j = 0; j < 3; j++)
+    {
+      random = rand() % 7;
+      printf("Starting with connection %d on round %d, using random %d \n", i, j, random);
+      //can't connect to yourself and connection must be available
+      if (random != i && gameboard[i].connections[random] == 0)
+      {
+        //confirm the room still needs more connections
+        printf("Starting with connection %d on round %d *not* trying to connect: room %d is available\n", i, j, random);
+        if (gameboard[i].connectionsCount < 6)
+        {
+          printf("Starting with connection %d on round %d *not* trying to connect: connection count %d\n", i, j, gameboard[i].connectionsCount);
+          //confirm the randomly picked room is available
+          if (gameboard[random].connectionsCount < 6)
+          {
+            printf("Starting with connection %d on round %d *not* trying to connect: room %d is available\n", i, j, random);
+            gameboard[i].connections[random] = 1;
+            gameboard[random].connections[i] = 1;
+            gameboard[i].connectionsCount++;
+            gameboard[random].connectionsCount++;
+          }
+          //if connection can't be reached, roll back j to redo loop again.
+          else {
+            printf("Starting with connection %d on round %d *not* trying to connect: room %d is *not* available\n", i, j, random);
+            j--;
+          }
+
+        }
+        //room i already has  too many connections. set j to move to next room i
+        else {
+          printf("Starting with connection %d on round %d *not* trying to connect: *too many connection*\n", i, j);
+          j = 3; // !
+        }
+      }
+      else if (gameboard[i].connectionsCount >= 3) {
+       j = 3;
+      }
+      //initial random value was already taken or was the room i itself
+      else {
+        printf("Starting with connection %d on round %d *not* trying to connect\n", i, j);
+        j--;
+      }
+    }
+  }
+
+  //was getting junk values for final room, so pulling out and building on its own
+  gameboard[6].connections[6] = 0;
+  for (i = 0; i < 6; i++)
+  {
+      gameboard[6].connections[i] = gameboard[i].connections[6];
+      if (gameboard[6].connections[i] == 1) gameboard[6].connectionsCount++;
+  }
+
+
+  for (i = 0; i < 7; i++)
+  {
+    for (j = 0; j < 7; j++)
+    {
+      printf("%d ", gameboard[i].connections[j]);
+    }
+    printf("\n");
+  }
+
   //all rooms have now been completely initialized and connected
 
   //grab processor ID for folder
   int pid = getpid();
-  //initialize folder name and append pid
+  //initialize folder name and append pid. this directory will be populated by rooms
   char directory[100];
   memset(directory, '\0', 100);
   strcpy(directory, "grossmmi.rooms.");
@@ -107,76 +169,47 @@ int main()
   strcat(directory, input);
   mkdir(directory, 0777);
 
-
-
-  //create 7 room files
-  int write;
   char fileName[100];
-  //string for proper formatting into file
-  char *name = "ROOM NAME: ";
-  char *connect = "CONNECTION ";
-  char *roomType = "ROOM TYPE: ";
-  char *colon = ": ";
-  char *nline = "\n";
+  char buffer[100];
+  char name[15];
+  FILE* fp;
 
   //construct the 7 files
   for (i = 0; i < 7; i++)
   {
     memset(fileName, '\0', 100);
-    strcpy(fileName, "/");
-    strcat(fileName, directory);
-    strcat(fileName, "/room");
-    char roomNo[2];
-    for (j = 0; j < 2; j++)
-    {
-      roomNo[i] = '\0';
-    }
-    j = sprintf(roomNo, "%d", i);
-    strcat(fileName, roomNo);
-    strcat(fileName, ".txt");
-    FILE *fp = fopen(fileName, "w+");
-
-    write = fwrite(name, sizeof(char), sizeof(name), fp);
-    write = fwrite(gameboard[i].roomName, sizeof(char), sizeof(gameboard[i].roomName), fp);
-    write = fwrite(nline, sizeof(char), sizeof(nline), fp);
-
-    //loop through array of connections. AND statement sets it to ignore itself in connections
-    //note: this is nested. The room we care about is of value i. the value j is for its connection.
-    int count = 1;
+    memset(buffer, '\0', 100);
+    memset(name, '\0', 100);
+    sprintf(fileName, "./grossmmi.rooms.%d/%s", (int)pid, gameboard[i].roomName);
+    fp = fopen(fileName, "w+");
+    sprintf(buffer, "ROOM NAME: %s\n", gameboard[i].roomName);
+    fputs(buffer, fp);
+    //while room file is open, write necessary lines to it
     for (j = 0; j < 7; j++)
     {
-      if (gameboard[i].connections[j] == 1 && i != j)
+      if(j != i && gameboard[i].connections[j] == 1)
       {
-        write = fwrite(connect, sizeof(char), sizeof(connect), fp);
-        char num[2];
-        for (j = 0; j < 2; j++)
-        {
-          num[j] = '\0';
-        }
-        k = sprintf(num, "%d", i);
-        count++;
-        write = fwrite(num, sizeof(char), sizeof(num), fp);
-        write = fwrite(colon, sizeof(char), sizeof(colon), fp);
-        write = fwrite(gameboard[j].roomName, sizeof(char), sizeof(gameboard[j].roomName), fp);
-        write = fwrite(nline, sizeof(char), sizeof(nline), fp);
+        sprintf(buffer, "CONNECTION %d: %s\n", j + 1, gameboard[j].roomName);
+        fputs(buffer, fp);
       }
     }
-    int thisType;
+    //identify room type
     if (gameboard[i].myType == start)
-      thisType = 0;
+    {
+      sprintf(buffer, "ROOM TYPE: %s\n", s);
+    }
     else if (gameboard[i].myType == mid)
-      thisType = 1;
+    {
+      sprintf(buffer, "ROOM TYPE: %s\n", m);
+    }
     else
-      thisType = 2;
-
-    //write final line of room type
-    write = fwrite(roomType, sizeof(char), sizeof(roomType), fp);
-    write = fwrite(typeString[thisType], sizeof(char), sizeof(typeString[thisType]), fp);
-    write = fwrite(nline, sizeof(char), sizeof(nline), fp);
-
-    //close the file
+    {
+          sprintf(buffer, "ROOM TYPE: %s\n", e);
+    }
+    fputs(buffer, fp);
     fclose(fp);
   }
+
 
   return 0;
 }
