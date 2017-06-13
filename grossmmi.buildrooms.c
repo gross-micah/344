@@ -73,38 +73,21 @@ int main()
     gameboard[i].myType = mid;
   }
 
-
-  printf("Game board starting\n");
-  for (i = 0; i < 7; i++)
-  {
-    for (j = 0; j < 7; j++)
-    {
-      printf("%d ", gameboard[i].connections[j]);
-    }
-    printf("\n");
-  }
-
-
   //create connections between 3 and 6
   for (i = 0; i <= 6; i++)
   {
-    printf("Starting with connection %d\n", i);
     for (j = 0; j < 3; j++)
     {
       random = rand() % 7;
-      printf("Starting with connection %d on round %d, using random %d \n", i, j, random);
       //can't connect to yourself and connection must be available
       if (random != i && gameboard[i].connections[random] == 0)
       {
         //confirm the room still needs more connections
-        printf("Starting with connection %d on round %d *not* trying to connect: room %d is available\n", i, j, random);
         if (gameboard[i].connectionsCount < 6)
         {
-          printf("Starting with connection %d on round %d *not* trying to connect: connection count %d\n", i, j, gameboard[i].connectionsCount);
           //confirm the randomly picked room is available
           if (gameboard[random].connectionsCount < 6)
           {
-            printf("Starting with connection %d on round %d *not* trying to connect: room %d is available\n", i, j, random);
             gameboard[i].connections[random] = 1;
             gameboard[random].connections[i] = 1;
             gameboard[i].connectionsCount++;
@@ -112,14 +95,12 @@ int main()
           }
           //if connection can't be reached, roll back j to redo loop again.
           else {
-            printf("Starting with connection %d on round %d *not* trying to connect: room %d is *not* available\n", i, j, random);
             j--;
           }
 
         }
         //room i already has  too many connections. set j to move to next room i
         else {
-          printf("Starting with connection %d on round %d *not* trying to connect: *too many connection*\n", i, j);
           j = 3; // !
         }
       }
@@ -128,7 +109,6 @@ int main()
       }
       //initial random value was already taken or was the room i itself
       else {
-        printf("Starting with connection %d on round %d *not* trying to connect\n", i, j);
         j--;
       }
     }
@@ -140,16 +120,6 @@ int main()
   {
       gameboard[6].connections[i] = gameboard[i].connections[6];
       if (gameboard[6].connections[i] == 1) gameboard[6].connectionsCount++;
-  }
-
-
-  for (i = 0; i < 7; i++)
-  {
-    for (j = 0; j < 7; j++)
-    {
-      printf("%d ", gameboard[i].connections[j]);
-    }
-    printf("\n");
   }
 
   //all rooms have now been completely initialized and connected
