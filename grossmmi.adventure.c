@@ -23,9 +23,16 @@ int main()
   struct Room gameboard[7];
   time_t current;
   time_t recent = -1;
-  int i, j, k, begin, win;
+  size_t size;
+  //begin and win used to keep track of array index for start end rooms
+  int i, j, k, begin, win, done, found;
+  int index = 0;
   char line[100];
   char folder[100];
+  char fullpath[100];
+  char buffer[100];
+  int path[20];
+  FILE *fp;
   //initialize the gameboard value for each room
   for (i = 0; i < 7; i++)
   {
@@ -33,10 +40,10 @@ int main()
   }
 
   //get directory of most recently touched game folder
-  DIR *directoy;
+  DIR *directory;
   struct stat dStats;
   struct dirent *lineItem;
-  directoy = opendir("./");
+  directory = opendir("./");
   if (directory == NULL)
   {
     printf("Error opening directory.");
@@ -45,17 +52,17 @@ int main()
   }
   /*continue looping to find most recently added game directory
   Most recent will be saved in folder variable*/
-  while (lineItem = readdir(directoy))
+  while ((lineItem = readdir(directory)))
   {
     if (!strncmp("grossmi.room.", lineItem->d_name, 13))
     {
-      stat(entries->d_name, stats);
-      current = stats->st_mtime;
+      stat(lineItem->d_name, &dStats);
+      current = dStats.st_mtime;
       if (current > recent)
       {
         memset(folder, '\0', sizeof(folder));
         recent = current;
-        strcpy(folder, entries->d_name);
+        strcpy(folder, lineItem->d_name);
       }
     }
   }
@@ -70,26 +77,30 @@ int main()
   //when finding the room with start and end type, capture those values
   //note: can't hard code a for loop. need to watch out for current and
   //working directories
-  while (lineItem = readdir(directoy))
+
+  //directory = DIR*
+  //line item == struct dirent
+  while ((lineItem = readdir(directory)) != NULL)
   {
-    if (strlen(line->d_name) > 3)
+    //only act on items known be room names
+    if (strlen(lineItem->d_name) > 3)
     {
       memset(line, '\0', sizeof(line));
       memset(fullpath, '\0', sizeof(fullpath));
-      strcpy(fullpath, folder);
-      strcat(fullpath, fileName[i]);
-      FILE *fp = fopen(fullpath, "r");
+      sprintf(fullpath, "./%s/%s", folder, lineItem->d_name);
+      fp = fopen(fullpath, "r");
       if (fp == NULL)
       {
         printf("Error opening files.");
-
         exit(1);
       }
 
+      //while loop to continue processing the contents of the file
       while (fgets(line, sizeof(line), fp))
       {
         if (strstr(line, "ROOM NAME") != NULL)
         {
+          //find the character before the newline
           int last;
           for (j = 0; j < 100; j++)
           {
@@ -101,7 +112,6 @@ int main()
           }
           //note: line + 11 is the size of "ROOM NAME: "
           strncpy(gameboard[i].roomName, line + 11, last - 11);
-          gameboard[i].position = i;
         }
         //set any connections
         else if (strstr(line, "CONNECTION") != NULL)
@@ -112,11 +122,8 @@ int main()
           {
             gameboard[i].connections[contact] = 1;
             gameboard[i].connectionsCount += 1;
-            if (gameboard[contact].connections[i] == 0)
-            {
-              gameboard[contact].connections[i] = 1;
-              gameboard[contact].connectionsCount += 1;
-            }
+            gameboard[contact].connections[i] = 1;
+            gameboard[contact].connectionsCount += 1;
           }
         }
         //set room type
@@ -137,6 +144,7 @@ int main()
         }
       }
     }
+    fclose(fp);
   }
 
   //game board established with rooms created. can begin playing the gameboard
@@ -149,7 +157,7 @@ int main()
     printf("POSSIBLE CONNECTIONS: ");
     for (j = 0; j < 7; j++)
     {
-      if (gameboard[i].connections[j] == 1 && j != gameboard[i].position)
+      if (gameboard[i].connections[j] == 1 && j != location)
       {
         printf("%s", gameboard[j].roomName);
         period += 1;
@@ -160,36 +168,43 @@ int main()
         printf(", ");
     }
     printf("\nWHERE TO? >");
-    char buffer[100];
     memset(buffer, '\0', sizeof(buffer));
-    getline(buffer, sizeof(buffer), stdin);
+    getline(&buffer, &size, stdin);
     if (strcmp(buffer, "time") == 0)
     {
       //return to add functioncality for pthreads
     }
     for (i = 0; i < 7; i++)
     {
-      if (gameboard[location].connections[i] == 1 && i != gameboard[i].position)
+      found = 0;
+      if (strcmp(buffer, gameboard[i].roomName) == 0)
       {
-        if (strcmp(buffer, gameboard[i].roomName) == 0)
+        found = 1;
+        if (gameboard[location].connections[i] == 1 && i != location)
         {
           location = i;
           steps += 1;
         }
+        else
+        {
+          printf("INVALID CONNECTION\n");
+        }
       }
     }
-    printf("\nHUH? I DON’T UNDERSTAND THAT ROOM. TRY AGAIN.\n\n");
+    if (found = 0)
+      printf("\nHUH? I DON’T UNDERSTAND THAT ROOM. TRY AGAIN.\n\n");
     if (gameboard[location].myType == end)
       done = 1;
 
   } while(done != 1);
   printf("\nYOU HAVE FOUND THE END ROOM. CONGRATULATIONS!");
-  printf("\nYOU TOOK %d STEPS. YOUR PATH TO VICTORY WAS:\n");
-
-
-  //I release thee memory back into the wild!
-  free(entries);
-  free(stats);
+  printf("\nYOU TOOK %d STEPS. YOUR PATH TO VICTORY WAS:\n", steps);
+  for (i = 0; i <= steps; i++)
+  {
+    memset(buffer, '\0', sizeof(buffer));
+    sprintf(buffer, gameboard[path[i]].roomName);
+    printf("%s\n", buffer);
+  }
 
   return 0;
 }
