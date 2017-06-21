@@ -149,7 +149,7 @@ int main()
   {
     memset(fileName, '\0', 100);
     memset(buffer, '\0', 100);
-    memset(name, '\0', 100);
+    memset(name, '\0', 15);
     sprintf(fileName, "./grossmmi.rooms.%d/%s", (int)pid, gameboard[i].roomName);
     fp = fopen(fileName, "w+");
     sprintf(buffer, "ROOM NAME: %s\n", gameboard[i].roomName);
