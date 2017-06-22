@@ -24,12 +24,17 @@ int main()
   time_t current;
   time_t recent = -1;
   size_t size = 0;
+  char *rooms[10] = {"bathroom", "kitchen", "Chipotle", "bedroom", "office",
+  "solarium", "garage", "library", "moat", "basement"};
   //begin and win used to keep track of array index for start end rooms
   int i, j, k, begin, win, done, found;
   int index = 0;
   char line[100];
-  char folder[250];
-  char fullpath[100];
+  char folder[256];
+  memset(folder, '\0', sizeof(folder));
+  char fullpath[256];
+  char filesFolder[256];
+  memset(filesFolder, '\0', sizeof(filesFolder));
   char buffer[100];
   char *lineEntered = NULL;
   int path[20];
@@ -43,10 +48,12 @@ int main()
 
   //get directory of most recently touched game folder
   DIR *directory;
-  struct stat dStats;
+  struct stat *dStats;
   struct dirent *lineItem;
-  memset(fullpath, '\0', 100);
+  int correct = 1;
+  memset(fullpath, '\0', sizeof(fullpath));
   getcwd(fullpath, 100);
+  printf("full path is %s\n", fullpath);
   directory = opendir(fullpath);
   if (directory == NULL)
   {
@@ -56,121 +63,144 @@ int main()
   }
   /*continue looping to find most recently added game directory
   Most recent will be saved in folder variable*/
-  char *roomsFolder = "grossmmi.rooms.";
+  char *roomsFolder = "rooms";
+  //issues with getting file names forced malloc
+  dStats = malloc(sizeof(struct stat));
+  lineItem = malloc(sizeof(struct dirent));
   while ((lineItem = readdir(directory)))
   {
-    if (strstr(roomsFolder, lineItem->d_name) != NULL)
+    //printf("this lineItem string is %s\n", lineItem->d_name);
+    if (lineItem->d_name[9] == 'r' && lineItem->d_name[12] == 'm')
     {
-      printf("it's getting into the if statement");
-      stat(lineItem->d_name, &dStats);
-      current = dStats.st_mtime;
+      printf("found this line item: %s\n", lineItem->d_name);
+      stat(lineItem->d_name, dStats);
+      current = dStats->st_mtime;
       if (current > recent)
       {
-        memset(folder, '\0', sizeof(folder));
         recent = current;
         strcpy(folder, lineItem->d_name);
       }
     }
   }
   //move to new directory. Throw error if problem.
-  printf("value for folder is %s", folder);
-  directory = opendir(folder);
+  sprintf(fullpath, "%s/%s", fullpath, folder);
+  directory = opendir(fullpath);
+  memset(fullpath, '\0', sizeof(fullpath));
+  getcwd(fullpath, 100);
   if(directory == NULL)
   {
     printf("Error opening up game directory\n");
   }
 
-  //open files 1 by 1 and populate gameboard with room details
-  //when finding the room with start and end type, capture those values
-  //note: can't hard code a for loop. need to watch out for current and
-  //working directories
-  index = 0
+  /*read through directory and assign room names to any entries larger
+  than 3 chars
+  */
+  index = 0;
   while ((lineItem = readdir(directory)) != NULL)
   {
     //only act on items known be room names
     if (strlen(lineItem->d_name) > 3)
     {
-      memset(line, '\0', sizeof(line));
-      memset(fullpath, '\0', sizeof(fullpath));
-      sprintf(fullpath, "./%s/%s", folder, lineItem->d_name);
-      fp = fopen(fullpath, "r");
-      if (fp == NULL)
-      {
-        printf("Error opening files.");
-        exit(1);
-      }
-
-      //while loop to continue processing the contents of the file
-      while (fgets(line, sizeof(line), fp))
-      {
-        if (strstr(line, "ROOM NAME") != NULL)
-        {
-          //find the character before the newline
-          int last;
-          for (j = 0; j < 100; j++)
-          {
-            if (line[j] == '\n')
-            {
-              last = j - 1;
-              j = 100;
-            }
-          }
-          //note: line + 11 is the size of "ROOM NAME: "
-          strncpy(gameboard[i].roomName, line + 11, last - 11);
-        }
-        //set any connections
-        else if (strstr(line, "CONNECTION") != NULL)
-        {
-          //we know from formatting that the 11th character in the line is the number
-          int contact = line[11] - '0';
-          if (gameboard[i].connections[contact] == 0)
-          {
-            gameboard[i].connections[contact] = 1;
-            gameboard[i].connectionsCount += 1;
-            gameboard[contact].connections[i] = 1;
-            gameboard[contact].connectionsCount += 1;
-          }
-        }
-        //set room type
-        else if (strstr(line, "ROOM TYPE") != NULL)
-        {
-          if (strstr(line, "END") != NULL)
-          {
-            gameboard[i].myType = end;
-            win = i;
-          }
-          else if (strstr(line, "START") != NULL)
-          {
-            gameboard[i].myType = start;
-            begin = i;
-          }
-          else
-            gameboard[i].myType = mid;
-        }
-      }
+      strcpy(gameboard[index].roomName, lineItem->d_name);
+      printf("adding name %s\n", lineItem->d_name);
+      index++;
     }
-    fclose(fp);
   }
+
+  //open room files 1 by and populate our game board.
+  for (i = 0; i < 7; i++)
+  {
+    memset(filesFolder, '\0', sizeof(filesFolder));
+    sprintf(filesFolder, "%s/%s", folder, gameboard[i].roomName);
+    printf("trying to open %sXXX\n", filesFolder);
+    fp = fopen(filesFolder, "r");
+    if(fp == NULL)
+    {
+      printf("Error opening up file for room %d\n", i);
+      exit(1);
+    }
+
+    //while loop to continue processing the contents of the file
+    while (fgets(line, sizeof(line), fp))
+    {
+      if (strstr(line, "ROOM NAME") != NULL)
+      {
+        for (j = 0; j < 10; j++)
+        {
+          if (strstr(line, rooms[j]) != NULL)
+          {
+            strcpy(gameboard[i].roomName, rooms[j]);
+          }
+        }
+      }
+      //set any connections
+      else if (strstr(line, "CONNECTION") != NULL)
+      {
+        //run through and compare all possible names for connections
+        for (j = 0; j < 7; j++)
+        {
+          if (strstr(line, gameboard[j].roomName) != NULL && gameboard[i].connections[j] == 0)
+          {
+            gameboard[i].connections[j] = 1;
+            gameboard[i].connectionsCount += 1;
+            gameboard[j].connections[i] = 1;
+            gameboard[j].connectionsCount += 1;
+          }
+        }
+      }
+      //set room type
+      else if (strstr(line, "ROOM TYPE") != NULL)
+      {
+        if (strstr(line, "END") != NULL)
+        {
+          gameboard[i].myType = end;
+          win = i;
+        }
+        else if (strstr(line, "START") != NULL)
+        {
+          gameboard[i].myType = start;
+          begin = i;
+        }
+        else
+          gameboard[i].myType = mid;
+      }
+    }//end of while loop
+  }
+
+  //cleanup
+  free(lineItem);
+  free(dStats);
+  lineItem = NULL;
+  dStats = NULL;
+
+  fclose(fp);
   closedir(directory);
+
+
 
   //game board established with rooms created. can begin playing the gameboard
   done = 0;
   int steps = 0;
   int location = begin;
   int period = 0;
+  int displayed;
   do {
     printf("CURRENT LOCATION: %s\n", gameboard[location].roomName);
     printf("POSSIBLE CONNECTIONS: ");
+    period = 0;
     for (j = 0; j < 7; j++)
     {
-      if (gameboard[i].connections[j] == 1 && j != location)
+      displayed = period;
+      if (gameboard[location].connections[j] == 1 && j != location)
       {
         printf("%s", gameboard[j].roomName);
         period += 1;
       }
-      if (period == gameboard[i].connectionsCount)
+
+      if (period == gameboard[location].connectionsCount)
         printf(".");
-      else
+      //only add a comma when a name gets added
+      else if (period != displayed)
         printf(", ");
     }
     printf("\nWHERE TO? >");
