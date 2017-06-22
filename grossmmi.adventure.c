@@ -37,7 +37,10 @@ int main()
   memset(filesFolder, '\0', sizeof(filesFolder));
   char buffer[100];
   char *lineEntered = NULL;
+  char *newLine = NULL;
   int path[20];
+  char trail[300];
+  memset(trail, '\0', sizeof(trail));
   FILE *fp;
   //initialize the gameboard value for each room
   for (i = 0; i < 7; i++)
@@ -53,7 +56,6 @@ int main()
   int correct = 1;
   memset(fullpath, '\0', sizeof(fullpath));
   getcwd(fullpath, 100);
-  printf("full path is %s\n", fullpath);
   directory = opendir(fullpath);
   if (directory == NULL)
   {
@@ -72,7 +74,6 @@ int main()
     //printf("this lineItem string is %s\n", lineItem->d_name);
     if (lineItem->d_name[9] == 'r' && lineItem->d_name[12] == 'm')
     {
-      printf("found this line item: %s\n", lineItem->d_name);
       stat(lineItem->d_name, dStats);
       current = dStats->st_mtime;
       if (current > recent)
@@ -102,7 +103,6 @@ int main()
     if (strlen(lineItem->d_name) > 3)
     {
       strcpy(gameboard[index].roomName, lineItem->d_name);
-      printf("adding name %s\n", lineItem->d_name);
       index++;
     }
   }
@@ -112,7 +112,6 @@ int main()
   {
     memset(filesFolder, '\0', sizeof(filesFolder));
     sprintf(filesFolder, "%s/%s", folder, gameboard[i].roomName);
-    printf("trying to open %sXXX\n", filesFolder);
     fp = fopen(filesFolder, "r");
     if(fp == NULL)
     {
@@ -184,6 +183,8 @@ int main()
   int location = begin;
   int period = 0;
   int displayed;
+  path[0] = begin;
+  sprintf(trail, "%s", gameboard[location].roomName);
   do {
     printf("CURRENT LOCATION: %s\n", gameboard[location].roomName);
     printf("POSSIBLE CONNECTIONS: ");
@@ -205,26 +206,35 @@ int main()
     }
     printf("\nWHERE TO? >");
     getline(&lineEntered, &size, stdin);
-    if (strcmp(buffer, "time") == 0)
-    {
-      //return to add functioncality for pthreads
-    }
+    //need to strip away the new line character
+    if ((newLine = strchr(lineEntered, '\n')) != NULL)
+      *newLine = '\0';
     for (i = 0; i < 7; i++)
     {
       found = 0;
-      if (strcmp(buffer, gameboard[i].roomName) == 0)
+      if (strcmp(lineEntered, gameboard[i].roomName) == 0)
       {
         found = 1;
         if (gameboard[location].connections[i] == 1 && i != location)
         {
           location = i;
           steps += 1;
+          path[steps] = i;
+          i = 7;
+          sprintf(trail, "%s\n%s", trail, gameboard[i].roomName);
         }
         else
         {
           printf("INVALID CONNECTION\n");
         }
       }
+    }
+    if (strcmp(lineEntered, "time") == 0)
+    {
+      found = 1;
+      current = time(NULL);
+      struct tm *tm = localtime(&current);
+      printf("%s\n", asctime(tm));
     }
     if (found == 0)
       printf("\nHUH? I DON’T UNDERSTAND THAT ROOM. TRY AGAIN.\n\n");
@@ -237,9 +247,7 @@ int main()
   printf("\nYOU TOOK %d STEPS. YOUR PATH TO VICTORY WAS:\n", steps);
   for (i = 0; i <= steps; i++)
   {
-    memset(buffer, '\0', sizeof(buffer));
-    sprintf(buffer, "%s", gameboard[path[i]].roomName);
-    printf("%s\n", buffer);
+    printf("%s\n", gameboard[path[i]].roomName);
   }
 
   return 0;
